@@ -10,9 +10,9 @@ if (!isset($_SESSION['userID']) || $_SESSION['userType'] !== 'learner') {
 }
 
 $learnerID = (int)$_SESSION['userID'];
-$showScorePage = false; // متغير لتحديد هل نعرض النتيجة أم لا
+$showScorePage = false; 
 
-// --- 2. الجزء الأول: حفظ الملاحظات (الربط الثالث) ---
+// --- 2. الجزء الأول: حفظ الملاحظات ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'submit_feedback') {
     
     $quizID_feedback = intval($_POST['quizID_feedback']);
@@ -24,30 +24,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             INSERT INTO quizfeedback (quizID, learnerID, rating, comments, date) 
             VALUES (?, ?, ?, ?, NOW())
         ");
-        // (النقطة 13d): إضافة الفيدباك لقاعدة البيانات
         $stmt->bind_param("iiss", $quizID_feedback, $learnerID, $rating, $comments);
         $stmt->execute();
         $stmt->close();
     }
     
-    // (النقطة 13d): إعادة التوجيه لصفحة المتعلم
     header('Location: learner_home.php');
     exit;
 }
 
 // --- 3. الجزء الثاني: حساب النتيجة ---
-// (هذا الكود يعمل عندما يضغط "Done" من صفحة الكويز)
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['quizID'])) {
     
     $quizID = intval($_POST['quizID']);
-    $submittedQuestionIDs = $_POST['questionIDs'] ?? []; // مصفوفة معرّفات الأسئلة
-    $submittedAnswers = $_POST['answers'] ?? [];     // مصفوفة إجابات المستخدم
+    $submittedQuestionIDs = $_POST['questionIDs'] ?? []; 
+    $submittedAnswers = $_POST['answers'] ?? [];     
     
     $totalQuestions = count($submittedQuestionIDs);
     $correctCount = 0;
     
     if ($totalQuestions > 0) {
-        // جلب الإجابات الصحيحة للأسئلة
         $placeholders = implode(',', array_fill(0, $totalQuestions, '?'));
         $types = str_repeat('i', $totalQuestions);
         
@@ -62,10 +58,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['quizID'])) {
         }
         $stmt->close();
 
-        // (النقطة 13b): حساب النتيجة
         foreach ($submittedQuestionIDs as $id) {
             $correct = $correctAnswersMap[$id] ?? null;
-            $submitted = $submittedAnswers[$id] ?? null; // استخدام $id كمفتاح
+            $submitted = $submittedAnswers[$id] ?? null; 
             
             if ($correct !== null && $correct === $submitted) {
                 $correctCount++;
@@ -75,13 +70,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['quizID'])) {
 
     $scorePercent = ($totalQuestions > 0) ? round(($correctCount / $totalQuestions) * 100) : 0;
     
-    // (النقطة 13b): حفظ النتيجة في جدول takenquiz
     $stmt = $conn->prepare("INSERT INTO takenquiz (quizID, learnerID, score) VALUES (?, ?, ?)");
     $stmt->bind_param("iii", $quizID, $learnerID, $scorePercent);
     $stmt->execute();
     $stmt->close();
 
-// (النقطة 13c): تحديد الأنيميشن
+    // (النقطة 13c): تحديد الأنيميشن
     $animationwidth = 300;
     if ($scorePercent >= 80) {
         $animationToShow = 'animations/trophy.json'; // (ضعي اسم ملفك)
@@ -106,10 +100,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['quizID'])) {
     $quizInfo = $stmt->get_result()->fetch_assoc();
     $stmt->close();
 
-    $showScorePage = true; // تم حساب النتيجة، اعرض الصفحة
+    $raw = $quizInfo['photoFileName'] ?? '';
+    // المسار الافتراضي
+$photoPath = 'images/default.png';
+
+if ($raw) {
+  // لو القيمة أصلاً فيها مسار (uploads/ أو images/ أو رابط http)
+  if (preg_match('#^(uploads/|images/|/|https?://)#i', $raw)) {
+    $candidate = $raw;
+  } else {
+    // اسم ملف فقط → نضيف مجلد الرفع
+    $candidate = 'uploads/' . $raw;
+  }
+
+  // تأكد أن الملف موجود فعلاً قبل العرض
+  if (is_file($candidate)) {
+    $photoPath = $candidate;
+  }
+    }
+
+    $showScorePage = true; 
 }
 
-// إذا حاول المستخدم فتح الصفحة مباشرة (GET)
 if (!$showScorePage) {
     header('Location: learner_home.php');
     exit;
@@ -121,13 +133,7 @@ if (!$showScorePage) {
   <meta charset="UTF-8">
   <title>Quiz Score & Feedback</title>
   <link rel="stylesheet" href="style.css">
-  <head>
-  <meta charset="UTF-8">
-  <title>Quiz Score & Feedback</title>
-  <link rel="stylesheet" href="style.css">
-  
   <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
-</head>
 </head>
 <body>
   <div class="quiz-box">
@@ -137,12 +143,13 @@ if (!$showScorePage) {
     </h2>
 
     <div id="educator-info">
-      <img src="<?php echo htmlspecialchars($quizInfo['photoFileName']); ?>" alt="Educator Photo" class="teacher">
+      <img src="<?php echo htmlspecialchars($photoPath); ?>" alt="Educator Photo" class="teacher">
       <span><?php echo htmlspecialchars($quizInfo['firstName'] . ' ' . $quizInfo['lastName']); ?></span>
     </div>
 
     <div class="score-box">
       <p><strong>Quiz Score:</strong> <?php echo $scorePercent; ?>%</p>
+      
       <lottie-player
         src="<?php echo $animationToShow; ?>"
         background="transparent" 
