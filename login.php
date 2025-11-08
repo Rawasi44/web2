@@ -20,7 +20,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // التحقق من كلمة المرور
         if (password_verify($password, $row['password'])) {
             // تسجيل الدخول ناجح
-            $_SESSION['user_id'] = $row['id'];
+            $_SESSION['userID'] = $row['id'];
             $_SESSION['userType'] = $row['userType'];
             $_SESSION['firstName'] = $row['firstName'];
             $_SESSION['lastName']     = $row['lastName'];
