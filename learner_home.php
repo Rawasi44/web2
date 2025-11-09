@@ -7,13 +7,13 @@ require 'db_connection.php';
 
 $learnerID = (int)$_SESSION['userID'];
 
-/* 1) المواضيع للفلترة (اختياري) */
+
 $topics = $conn->query("SELECT id, topicName FROM Topic ORDER BY topicName");
 
-/* استقبال الفلتر */
+
 $topicID = isset($_POST['topicID']) ? (int)$_POST['topicID'] : 0;
 
-/* 2) الكويزات المتاحة + اسم المعلم + عدد الأسئلة */
+
 $sql = "
   SELECT 
     Q.id AS quizID,
@@ -28,7 +28,7 @@ if ($topicID) { $sql .= " WHERE Q.topicID = $topicID "; }
 $sql .= " ORDER BY T.topicName, U.firstName ";
 $quizzes = $conn->query($sql);
 
-/* 3) أسئلتي المقترحة (My Recommended Questions) */
+
 $myReco = $conn->query("
   SELECT 
     RQ.*,
@@ -64,22 +64,20 @@ $myReco = $conn->query("
         <tr>
           <th style="width:180px;">Profile</th>
           <td><?php
-// من السيشن
+
 $raw = $_SESSION['photoFileName'] ?? '';
 
-// المسار الافتراضي
 $photoPath = 'images/default.png';
 
 if ($raw) {
-  // لو القيمة أصلاً فيها مسار (uploads/ أو images/ أو رابط http)
+ 
   if (preg_match('#^(uploads/|images/|/|https?://)#i', $raw)) {
     $candidate = $raw;
   } else {
-    // اسم ملف فقط → نضيف مجلد الرفع
+   
     $candidate = 'uploads/' . $raw;
   }
 
-  // تأكد أن الملف موجود فعلاً قبل العرض
   if (is_file($candidate)) {
     $photoPath = $candidate;
   }
