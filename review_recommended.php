@@ -54,3 +54,4 @@ if ($action === 'approve') {
 
 header('Location: educator_home.php'); exit;
 
+
