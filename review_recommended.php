@@ -1,10 +1,11 @@
 <?php
 session_start();
-if (!isset($_SESSION['user_id']) || ($_SESSION['userType'] ?? '') !== 'educator') {
+if (!isset($_SESSION['userID']) || ($_SESSION['userType'] ?? '') !== 'educator') {
   header('Location: login.php'); exit;
 }
 require 'db_connection.php';
 
+$educatorID = (int)$_SESSION['userID'];
 $recID  = (int)($_POST['recID'] ?? 0);
 $action = $_POST['action'] ?? '';
 $comment= trim($_POST['comment'] ?? '');
@@ -13,7 +14,18 @@ if (!$recID || !in_array($action, ['approve','disapprove'], true)) {
   header('Location: educator_home.php'); exit;
 }
 
-$rec = $conn->query("SELECT * FROM RecommendedQuestion WHERE id=$recID")->fetch_assoc();
+
+$q = $conn->prepare("
+  SELECT RQ.*
+  FROM RecommendedQuestion RQ
+  JOIN Quiz Q ON Q.id = RQ.quizID
+  WHERE RQ.id=? AND Q.educatorID=?
+");
+$q->bind_param("ii", $recID, $educatorID);
+$q->execute();
+$rec = $q->get_result()->fetch_assoc();
+$q->close();
+
 if (!$rec) { header('Location: educator_home.php'); exit; }
 
 if ($action === 'approve') {
@@ -31,12 +43,14 @@ if ($action === 'approve') {
   $stmt->execute();
   $stmt->close();
 
-
+ 
   $c = $conn->real_escape_string($comment);
   $conn->query("UPDATE RecommendedQuestion SET status='approved', comments='$c' WHERE id=$recID");
+
 } else {
   $c = $conn->real_escape_string($comment);
   $conn->query("UPDATE RecommendedQuestion SET status='disapproved', comments='$c' WHERE id=$recID");
 }
 
 header('Location: educator_home.php'); exit;
+
