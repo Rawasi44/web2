@@ -3,7 +3,7 @@
 session_start();
 include 'db_connection.php'; // للاتصال بقاعدة البيانات
 
-// --- 1. التأكد أن المستخدم "متعلم" ---
+// --- 1. التأكد أن المستخدم متعلم ---
 if (!isset($_SESSION['userID']) || $_SESSION['userType'] !== 'learner') {
     header('Location: login.php');
     exit;
@@ -12,28 +12,9 @@ if (!isset($_SESSION['userID']) || $_SESSION['userType'] !== 'learner') {
 $learnerID = (int)$_SESSION['userID'];
 $showScorePage = false; 
 
-// --- 2. الجزء الأول: حفظ الملاحظات ---
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'submit_feedback') {
-    
-    $quizID_feedback = intval($_POST['quizID_feedback']);
-    $rating = intval($_POST['rating']);
-    $comments = trim($_POST['comments']);
+//
 
-    if ($quizID_feedback > 0 && $rating > 0) {
-        $stmt = $conn->prepare("
-            INSERT INTO quizfeedback (quizID, learnerID, rating, comments, date) 
-            VALUES (?, ?, ?, ?, NOW())
-        ");
-        $stmt->bind_param("iiss", $quizID_feedback, $learnerID, $rating, $comments);
-        $stmt->execute();
-        $stmt->close();
-    }
-    
-    header('Location: learner_home.php');
-    exit;
-}
-
-// --- 3. الجزء الثاني: حساب النتيجة ---
+// --- 2.  حساب النتيجة ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['quizID'])) {
     
     $quizID = intval($_POST['quizID']);
@@ -164,8 +145,7 @@ if (!$showScorePage) {
     </div>
 
     <h3>Feedback about Quiz:</h3>
-    <form action="quiz_score_feedback.php" method="POST">
-      <input type="hidden" name="action" value="submit_feedback">
+    <form action="add_feedback.php" method="POST">
       <input type="hidden" name="quizID_feedback" value="<?php echo $quizID; ?>">
       
       <label>Rating (out of 5):</label>
