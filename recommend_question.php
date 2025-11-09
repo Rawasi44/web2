@@ -6,7 +6,10 @@ if (!isset($_SESSION['userID']) || ($_SESSION['userType'] ?? '') !== 'learner') 
 require 'db_connection.php';
 
 
-$topicsRes = $conn->query("SELECT id, topicName FROM Topic ORDER BY topicName");
+$topicsRes = $conn->query("SELECT id, topicName 
+FROM topic
+ORDER BY FIELD(topicName, 'HTML & CSS', 'JavaScript', 'Databases');
+");
 $educRes   = $conn->query("SELECT id, firstName, lastName FROM User WHERE userType='educator' ORDER BY firstName, lastName");
 
 
@@ -107,5 +110,7 @@ unset($_SESSION['flash_error']);
   </footer>
 </body>
 </html>
+
+
 
 
