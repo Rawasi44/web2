@@ -12,7 +12,7 @@ $last   = htmlspecialchars($_SESSION['lastName'] ?? '');
 $email  = htmlspecialchars($_SESSION['emailAddress'] ?? '');
 $photo  = $_SESSION['photoFileName'] ?? 'images/default.png';
 
-// مسار الصورة
+
 if (!preg_match('#^(uploads/|images/|/|https?://)#i', $photo)) {
   $photo = 'uploads/' . $photo;
 }
@@ -20,7 +20,6 @@ if (!is_file($photo)) {
   $photo = 'images/default.png';
 }
 
-// ✅ جلب الكويزات (أسماء الجداول بالحروف الصغيرة كما في القاعدة)
 $quizzes = $conn->query("
   SELECT 
     q.id AS quizID,
@@ -36,7 +35,6 @@ $quizzes = $conn->query("
   ORDER BY t.topicName
 ");
 
-// ✅ جلب الأسئلة الموصى بها قيد المراجعة
 $pending = $conn->query("
   SELECT rq.*, t.topicName,
          CONCAT(u.firstName,' ',u.lastName) AS learnerName
@@ -191,3 +189,4 @@ $pending = $conn->query("
   </footer>
 </body>
 </html>
+
