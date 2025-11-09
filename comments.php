@@ -41,7 +41,7 @@ function stars($n) {
 </head>
 <body>
   <div class="header">
-    <div class="logo"><img src="logo.png" alt="Logo"></div>
+    <div class="logo"><img src="images/logo.png" alt="Logo"></div>
     <h3>
       Feedback & Comments
       <?php if ($quizInfo): ?>
@@ -89,7 +89,7 @@ function stars($n) {
 
   <footer class="site-footer">
     <div class="footer-brand">
-      <img src="logo.png" alt="Edulearn Logo" class="footer-logo">
+      <img src="images/logo.png" alt="Edulearn Logo" class="footer-logo">
       <h2 class="footer-name"><span style="color:rgb(167, 203, 251);">EduLearn</span></h2>
     </div>
     <p class="footer-copy">&copy; 2025 Edulearn. All rights reserved.</p>
