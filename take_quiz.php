@@ -3,13 +3,13 @@
 session_start();
 include 'db_connection.php'; // للاتصال بقاعدة البيانات
 
-// --- 1. التأكد أن المستخدم "متعلم" ---
+// --- 1. التأكد أن المستخدم متعلم ---
 if (!isset($_SESSION['userID']) || $_SESSION['userType'] !== 'learner') {
     header('Location: login.php');
     exit;
 }
 
-// --- 2. استقبال معرّف الكويز ---
+// --- 2. استقبال معرف الكويز ---
 $quizID = isset($_GET['quizID']) ? intval($_GET['quizID']) : 0;
 if ($quizID == 0) {
     header('Location: learner_home.php');
