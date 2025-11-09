@@ -7,12 +7,34 @@ session_start();
 
 $quizID = isset($_GET['quizID']) ? intval($_GET['quizID']) : 0;
 
-$query = "SELECT * FROM quizquestion WHERE quizID = ?";
+// ✅ استعلام لجلب معلومات الكويز مع اسم التوبيك
+$query = "
+  SELECT q.*, t.topicName 
+  FROM quiz q
+  JOIN topic t ON q.topicID = t.id
+  WHERE q.id = ?
+";
 $stmt = $conn->prepare($query);
+$stmt->bind_param("i", $quizID);
+$stmt->execute();
+$quizInfo = $stmt->get_result()->fetch_assoc();
+
+// إذا ما وجد الكويز، خروج آمن
+if (!$quizInfo) {
+  echo "<p>⚠️ Invalid quiz ID.</p>";
+  exit;
+}
+
+$topicName = htmlspecialchars($quizInfo['topicName']); // 👈 اسم التوبيك
+
+// ✅ بعدين نجيب كل الأسئلة
+$questionsQuery = "SELECT * FROM quizquestion WHERE quizID = ?";
+$stmt = $conn->prepare($questionsQuery);
 $stmt->bind_param("i", $quizID);
 $stmt->execute();
 $result = $stmt->get_result();
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -61,7 +83,7 @@ $result = $stmt->get_result();
 
   <div class="quiz-container">
     <div class="quiz-header">
-      <h2>Questions List</h2>
+<h2>Quiz for <?= $topicName ?></h2>
       <a href="add_question.php?quizID=<?= $quizID ?>" class="add-question-btn">Add New Question</a>
     </div>
 
