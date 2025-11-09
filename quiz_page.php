@@ -45,10 +45,7 @@ $result = $stmt->get_result();
       padding: 10px;
       vertical-align: top;
     }
-    th {
-      background-color: #f2f2f2;
-      text-align: left;
-    }
+  
   </style>
 </head>
 <body>
