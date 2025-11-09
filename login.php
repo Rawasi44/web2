@@ -36,54 +36,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 exit;
             }
         } else {
-           header("Location: login.php?error=wrongPassword");
+           header("Location: login.html?error=wrongPassword");
            exit;
         }
     } else {
-        header("Location: login.php?error=emailNotFound");
+        header("Location: login.html?error=emailNotFound");
            exit;
     }
 }
 ?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Login Page</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <h1>Welcome to <span style="color: rgb(167, 203, 251);">EduLearn</span></h1>
-  <div class="logo">
-    <img src="images/logo.png" alt="Logo">
-  </div>
-  <h2>Login</h2>
-  <a href="home.html">Back to home</a>
-
-  <form method="POST" action="login.php" class="login-box">
-    <input class="input-field" type="email" name="email" placeholder="Enter your Email" required><br>
-    <input class="input-field" type="password" name="password" placeholder="Enter your Password" required><br>
-    <button class="btn-primary" type="submit">Login</button>
-  </form>
-
-  <?php 
-  if (isset($_GET['error'])){
-      if($_GET['error'] == 'wrongPassword'){
-          echo "<p style='color:red; text-align:center;'> Wrong password<?p>";
-      }elseif ($_GET['error'] == 'emailNotFound'){
-          echo "<p style='color:red; text-align:center;'>Email not found<?p>";
-      }
-  }
-  ?>
-
-  <footer class="site-footer">
-  <div class="footer-brand">
-    <img src="images/logo.png" alt="Edulearn Logo" class="footer-logo">
-    <h2 class="footer-name"><span style="color:rgb(167, 203, 251);">EduLearn</span></h2>
-  </div>
-  <p class="footer-copy">&copy; 2025 Edulearn. All rights reserved.</p>
-</footer>
-</body>
-</html>
 
