@@ -49,7 +49,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $_SESSION['emailAddress']  = $email;
     $_SESSION['photoFileName'] = $uniqueName;
 
-    // ✅ إنشاء الكويزات التلقائية إذا المستخدم "معلم"
+    //  إنشاء الكويزات التلقائية إذا المستخدم "معلم"
     if ($userType === "educator" && !empty($topicsArr)) {
         $educatorID = (int)$_SESSION['userID'];
 
