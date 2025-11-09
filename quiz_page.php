@@ -19,6 +19,37 @@ $result = $stmt->get_result();
   <meta charset="UTF-8">
   <title>Quiz Page</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    .q-image {
+      max-width: 120px;
+      display: block;
+      margin-bottom: 8px;
+      border-radius: 6px;
+    }
+    .options {
+      list-style-type: none;
+      padding-left: 10px;
+      margin: 5px 0;
+    }
+    .option.correct {
+      font-weight: bold;
+      color: green;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      vertical-align: top;
+    }
+    th {
+      background-color: #f2f2f2;
+      text-align: left;
+    }
+  </style>
 </head>
 <body>
   <div class="header">
@@ -42,32 +73,45 @@ $result = $stmt->get_result();
         <thead>
           <tr>
             <th>Question</th>
-            <th>Photo</th>
-            <th>Actions</th>
+            <th>Edit</th>
+            <th>Delete</th>
           </tr>
         </thead>
         <tbody>
         <?php while ($row = $result->fetch_assoc()): ?>
           <tr>
             <td>
-              <?= htmlspecialchars($row['question']) ?>
+              <!-- الصورة (تظهر فقط إذا كانت موجودة) -->
+              <?php if (!empty($row['questionFigureFileName'])): ?>
+                <img src="uploads/<?php echo htmlspecialchars($row['questionFigureFileName']); ?>" 
+                     alt="Question Figure" class="q-image">
+              <?php endif; ?>
+
+              <!-- نص السؤال -->
+              <strong><?= htmlspecialchars($row['question']) ?></strong>
+
+              <!-- الإجابات -->
               <ul class="options">
                 <li class="option <?= $row['correctAnswer']=='A'?'correct':'' ?>">A. <?= htmlspecialchars($row['answerA']) ?></li>
                 <li class="option <?= $row['correctAnswer']=='B'?'correct':'' ?>">B. <?= htmlspecialchars($row['answerB']) ?></li>
                 <li class="option <?= $row['correctAnswer']=='C'?'correct':'' ?>">C. <?= htmlspecialchars($row['answerC']) ?></li>
                 <li class="option <?= $row['correctAnswer']=='D'?'correct':'' ?>">D. <?= htmlspecialchars($row['answerD']) ?></li>
               </ul>
+
+              <!-- الإجابة الصحيحة -->
+              <p><strong>Correct:</strong> <?= htmlspecialchars($row['correctAnswer']) ?></p>
             </td>
-            <td>
-              <?php if (!empty($row['questionFigureFileName'])): ?>
-                <img src="uploads/<?= htmlspecialchars($row['questionFigureFileName']) ?>" width="100">
-              <?php else: ?>
-                <em>No image</em>
-              <?php endif; ?>
-            </td>
+
+            <!-- رابط التعديل -->
             <td>
               <a href="edit_question.php?id=<?= $row['id'] ?>" class="action-btn edit-btn">Edit</a>
-              <a href="delete_question.php?id=<?= $row['id'] ?>&quizID=<?= $quizID ?>" class="action-btn delete-btn" onclick="return confirm('Delete this question?');">Delete</a>
+            </td>
+
+            <!-- رابط الحذف -->
+            <td>
+              <a href="delete_question.php?id=<?= $row['id'] ?>&quizID=<?= $quizID ?>" 
+                 class="action-btn delete-btn" 
+                 onclick="return confirm('Delete this question?');">Delete</a>
             </td>
           </tr>
         <?php endwhile; ?>
@@ -78,6 +122,7 @@ $result = $stmt->get_result();
     <?php endif; ?>
   </div>
 </body>
+
 <footer class="site-footer">
   <div class="footer-brand">
     <img src="images/logo.png" alt="Logo" class="footer-logo">
