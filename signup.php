@@ -35,10 +35,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   } else {
     // إدخال المستخدم
     $insert = $conn->prepare("
-      INSERT INTO user (firstName, lastName, emailAddress, password, userType, photoFileName, topics)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO user (firstName, lastName, emailAddress, password, userType, photoFileName)
+      VALUES (?, ?, ?, ?, ?, ?)
     ");
-    $insert->bind_param("sssssss", $fname, $lname, $email, $password, $userType, $uniqueName, $topics);
+    $insert->bind_param("ssssss", $fname, $lname, $email, $password, $userType, $uniqueName);
     $insert->execute();
 
     // حفظ بيانات المستخدم في السيشن
