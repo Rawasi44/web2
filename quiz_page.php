@@ -7,7 +7,7 @@ session_start();
 
 $quizID = isset($_GET['quizID']) ? intval($_GET['quizID']) : 0;
 
-// ✅ استعلام لجلب معلومات الكويز مع اسم التوبيك
+// جلب بيانات الكويز + التوبيك
 $query = "
   SELECT q.*, t.topicName 
   FROM quiz q
@@ -19,15 +19,13 @@ $stmt->bind_param("i", $quizID);
 $stmt->execute();
 $quizInfo = $stmt->get_result()->fetch_assoc();
 
-// إذا ما وجد الكويز، خروج آمن
 if (!$quizInfo) {
   echo "<p>⚠️ Invalid quiz ID.</p>";
   exit;
 }
 
-$topicName = htmlspecialchars($quizInfo['topicName']); // 👈 اسم التوبيك
+$topicName = htmlspecialchars($quizInfo['topicName']);
 
-// ✅ بعدين نجيب كل الأسئلة
 $questionsQuery = "SELECT * FROM quizquestion WHERE quizID = ?";
 $stmt = $conn->prepare($questionsQuery);
 $stmt->bind_param("i", $quizID);
@@ -67,10 +65,11 @@ $result = $stmt->get_result();
       padding: 10px;
       vertical-align: top;
     }
-  
   </style>
 </head>
+
 <body>
+
   <div class="header">
     <div class="logo">
       <img src="images/logo.png" alt="Logo">
@@ -83,7 +82,7 @@ $result = $stmt->get_result();
 
   <div class="quiz-container">
     <div class="quiz-header">
-<h2>Quiz for <?= $topicName ?></h2>
+      <h2>Quiz for <?= $topicName ?></h2>
       <a href="add_question.php?quizID=<?= $quizID ?>" class="add-question-btn">Add New Question</a>
     </div>
 
@@ -97,19 +96,17 @@ $result = $stmt->get_result();
           </tr>
         </thead>
         <tbody>
+
         <?php while ($row = $result->fetch_assoc()): ?>
           <tr>
             <td>
-              <!-- الصورة (تظهر فقط إذا كانت موجودة) -->
               <?php if (!empty($row['questionFigureFileName'])): ?>
-                <img src="uploads/<?php echo htmlspecialchars($row['questionFigureFileName']); ?>" 
+                <img src="uploads/<?= htmlspecialchars($row['questionFigureFileName']); ?>" 
                      alt="Question Figure" class="q-image">
               <?php endif; ?>
 
-              <!-- نص السؤال -->
               <strong><?= htmlspecialchars($row['question']) ?></strong>
 
-              <!-- الإجابات -->
               <ul class="options">
                 <li class="option <?= $row['correctAnswer']=='A'?'correct':'' ?>">A. <?= htmlspecialchars($row['answerA']) ?></li>
                 <li class="option <?= $row['correctAnswer']=='B'?'correct':'' ?>">B. <?= htmlspecialchars($row['answerB']) ?></li>
@@ -117,29 +114,64 @@ $result = $stmt->get_result();
                 <li class="option <?= $row['correctAnswer']=='D'?'correct':'' ?>">D. <?= htmlspecialchars($row['answerD']) ?></li>
               </ul>
 
-              <!-- الإجابة الصحيحة -->
               <p><strong>Correct:</strong> <?= htmlspecialchars($row['correctAnswer']) ?></p>
             </td>
 
-            <!-- رابط التعديل -->
             <td>
               <a href="edit_question.php?id=<?= $row['id'] ?>" class="action-btn edit-btn">Edit</a>
             </td>
 
-            <!-- رابط الحذف -->
             <td>
-              <a href="delete_question.php?id=<?= $row['id'] ?>&quizID=<?= $quizID ?>" 
-                 class="action-btn delete-btn" 
-                 onclick="return confirm('Delete this question?');">Delete</a>
+              <button class="action-btn delete-btn" data-id="<?= $row['id'] ?>">Delete</button>
             </td>
           </tr>
         <?php endwhile; ?>
+
         </tbody>
       </table>
+
     <?php else: ?>
       <p>No questions found for this quiz.</p>
     <?php endif; ?>
   </div>
+
+
+<!-- 📌 سكربت AJAX لحذف السؤال -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+
+  $(".delete-btn").click(function(e) {
+    e.preventDefault();
+
+    if (!confirm("Are you sure you want to delete this question?")) return;
+
+    let btn = $(this);
+    let qid = btn.data("id");
+
+    $.ajax({
+      url: "delete_question_ajax.php",
+      type: "POST",
+      data: { id: qid },
+      success: function(response) {
+        if (response == true || response == "true") {
+                // Comment: deletion successful 
+
+          btn.closest("tr").remove();
+        } else {
+          alert("An error occurred while deleting.");
+        }
+      },
+      error: function() {
+        alert("Unable to connect to the server");
+      }
+    });
+
+  });
+
+});
+</script>
+
 </body>
 
 <footer class="site-footer">
@@ -149,4 +181,5 @@ $result = $stmt->get_result();
   </div>
   <p class="footer-copy">&copy; 2025 EduLearn. All rights reserved.</p>
 </footer>
+
 </html>
