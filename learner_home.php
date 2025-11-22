@@ -2,7 +2,7 @@
 // learner_home.php
 session_start();
 if (!isset($_SESSION['userID']) || ($_SESSION['userType'] ?? '') !== 'learner') {
-  header('Location: login.php'); exit;
+  header('Location: login.html'); exit;
 }
 require 'db_connection.php';
 
@@ -36,10 +36,26 @@ if ($first === '' || $last === '' || $email === '' || $photo === '') {
 
 // جهّزي مسار الصورة (uploads/images) وافتراضي عند عدم وجود الملف
 function safe_photo_local($p) {
-    $p = $p ?: 'images/default.png';
-    if (!preg_match('#^(uploads/|images/|/|https?://)#i', $p)) $p = 'uploads/'.$p;
-    if (!is_file($p)) $p = 'images/default.png';
-    return $p;
+    if (!$p) return "images/default.png";
+
+    // لو المسار كامل أصلاً (uploads أو images)
+    if (preg_match('#^(uploads/|images/)#i', $p))
+        return $p;
+
+    // لو موجود فعليًا داخل uploads/
+    if (is_file("uploads/".$p))
+        return "uploads/".$p;
+
+    // لو موجود فعليًا داخل images/
+    if (is_file("images/".$p))
+        return "images/".$p;
+
+    // لو موجود مباشرة في نفس مجلد الصفحة
+    if (is_file($p))
+        return $p;
+
+    // fallback
+    return "images/default.png";
 }
 $photo = safe_photo_local($photo);
 
@@ -168,18 +184,20 @@ function safe_photo($path) {
   <div class="quiz-container">
   <h2>Your Quizzes</h2>
 
-  <form class="filter-bar" method="get" action="learner_home.php">
+ <div class="filter-bar">
     <label for="topicID" class="muted">Filter by topic:</label>
-    <select name="topicID" id="topicID" class="input-field" style="max-width:260px;">
-      <option value="0">All topics</option>
-      <?php while($t = $topicsRes->fetch_assoc()): ?>
-        <option value="<?= (int)$t['id'] ?>" <?= $selectedTopicID===(int)$t['id']?'selected':'' ?>>
-          <?= htmlspecialchars($t['topicName']) ?>
-        </option>
-      <?php endwhile; ?>
+    <select id="topicID" class="input-field" style="max-width:260px;">
+        <option value="0">All topics</option>
+        <?php
+        $topicsRes2 = $conn->query("SELECT id, topicName FROM topic ORDER BY topicName");
+        while($t = $topicsRes2->fetch_assoc()):
+        ?>
+            <option value="<?= (int)$t['id'] ?>">
+                <?= htmlspecialchars($t['topicName']) ?>
+            </option>
+        <?php endwhile; ?>
     </select>
-    <button class="btn-primary" type="submit">Apply</button>
-  </form>
+</div>
 
   <table class="styled" id="quizzesTable">
     <thead>
@@ -284,5 +302,66 @@ function safe_photo($path) {
     </div>
     <p class="footer-copy">&copy; 2025 Edulearn. All rights reserved.</p>
   </footer>
+  
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+$(document).ready(function(){
+
+    $("#topicID").on("change", function(){
+        let topicID = $(this).val();
+
+        $.ajax({
+            url: "ajax_get_quizzes.php", // ملف PHP مستقل
+            type: "POST",
+            data: { topicID: topicID },
+            dataType: "json",
+
+            success: function(response){
+
+                $("#quizzesTable tbody").empty();
+
+                if(response.length === 0){
+                    $("#quizzesTable tbody").append(`
+                        <tr>
+                            <td colspan="4" style="text-align:center;opacity:.8;">
+                                No quizzes found.
+                            </td>
+                        </tr>
+                    `);
+                    return;
+                }
+
+                response.forEach(q => {
+                    $("#quizzesTable tbody").append(`
+                        <tr>
+                            <td>${q.topic}</td>
+                            <td>
+                                <div class="edu-wrap">
+                                    <img src="${q.educatorPhoto}" class="edu-avatar">
+                                    <span>${q.firstName} ${q.lastName}</span>
+                                </div>
+                            </td>
+                            <td style="text-align:center;">${q.qCount}</td>
+                            <td>
+                                ${q.qCount > 0 ? 
+                                    `<a class="btn-success" href="take_quiz.php?quizID=${q.quizID}">Take Quiz</a>` 
+                                    : ""
+                                }
+                            </td>
+                        </tr>
+                    `);
+                });
+            },
+
+            error: function(xhr, status, error){
+                console.log("ERROR:", error);
+            }
+        });
+    });
+
+});
+</script>
 </body>
 </html>
+
