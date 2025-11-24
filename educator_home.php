@@ -211,45 +211,65 @@ $pending = $conn->query("
         <tr><td colspan="4" style="text-align:center;opacity:.8;">No pending recommendations.</td></tr>
       <?php else: ?>
         <?php while($r = $pending->fetch_assoc()): ?>
-          <tr>
-            <td><?= htmlspecialchars($r['topicName']) ?></td>
-            <td>
-              <?php
-                $lp = $r['photoFileName'] ?: 'images/default.png';
-                if (!preg_match('#^(uploads/|images/|/|https?://)#i', $lp)) $lp = 'uploads/' . $lp;
-                if (!is_file($lp)) $lp = 'images/default.png';
-              ?>
-              <img src="<?= htmlspecialchars($lp) ?>" class="learner-avatar" alt="Learner">
-              <span class="learner-name"><?= htmlspecialchars($r['learnerName']) ?></span>
-            </td>
-            <td>
-              <div class="q-wrap">
-                <?php if (!empty($r['questionFigureFileName'])): ?>
-                  <img src="<?= htmlspecialchars($r['questionFigureFileName']) ?>" alt="Question Image" class="q-image">
-                <?php endif; ?>
-                <div>
-                  <?= nl2br(htmlspecialchars($r['question'])) ?>
-                  <ul class="options" style="margin-top:6px;">
-                    <li>A) <?= htmlspecialchars($r['answerA']) ?></li>
-                    <li>B) <?= htmlspecialchars($r['answerB']) ?></li>
-                    <li>C) <?= htmlspecialchars($r['answerC']) ?></li>
-                    <li>D) <?= htmlspecialchars($r['answerD']) ?></li>
-                  </ul>
-                </div>
-              </div>
-            </td>
-            <td>
-              <form method="post" action="review_recommended.php">
-                <input type="hidden" name="recID" value="<?= (int)$r['id'] ?>">
-                <textarea name="comment" class="input-field" placeholder="Comment (optional)"></textarea>
-                <div class="action-buttons" style="margin-top:8px;">
-                  <button class="action-btn edit-btn"   name="action" value="approve"    type="submit">Approve</button>
-                  <button class="action-btn delete-btn" name="action" value="disapprove" type="submit">Disapprove</button>
-                </div>
-              </form>
-            </td>
-          </tr>
-        <?php endwhile; ?>
+  <tr>
+    <td><?= htmlspecialchars($r['topicName']) ?></td>
+    <td>
+      <?php
+        // صورة المتعلّم
+        $lp = $r['photoFileName'] ?: 'images/default.png';
+        if (!preg_match('#^(uploads/|images/|/|https?://)#i', $lp)) {
+          $lp = 'uploads/' . $lp;
+        }
+        if (!is_file($lp)) {
+          $lp = 'images/default.png';
+        }
+
+        // صورة السؤال
+        $qImg = '';
+        if (!empty($r['questionFigureFileName'])) {
+          $qImg = $r['questionFigureFileName'];
+          // لو الاسم بدون مسار، نضيف uploads/
+          if (!preg_match('#^(uploads/|images/|/|https?://)#i', $qImg)) {
+            $qImg = 'uploads/' . $qImg;
+          }
+          // لو الملف مو موجود، نخليه فاضي عشان ما يحط <img> مكسورة
+          if (!is_file($qImg)) {
+            $qImg = '';
+          }
+        }
+      ?>
+      <img src="<?= htmlspecialchars($lp) ?>" class="learner-avatar" alt="Learner">
+      <span class="learner-name"><?= htmlspecialchars($r['learnerName']) ?></span>
+    </td>
+    <td>
+      <div class="q-wrap">
+        <?php if ($qImg): ?>
+          <img src="<?= htmlspecialchars($qImg) ?>" alt="Question Image" class="q-image">
+        <?php endif; ?>
+        <div>
+          <?= nl2br(htmlspecialchars($r['question'])) ?>
+          <ul class="options" style="margin-top:6px;">
+            <li>A) <?= htmlspecialchars($r['answerA']) ?></li>
+            <li>B) <?= htmlspecialchars($r['answerB']) ?></li>
+            <li>C) <?= htmlspecialchars($r['answerC']) ?></li>
+            <li>D) <?= htmlspecialchars($r['answerD']) ?></li>
+          </ul>
+        </div>
+      </div>
+    </td>
+    <td>
+      <form class="reviewForm" method="post" action="review_recommended_ajax.php">
+        <input type="hidden" name="recID" value="<?= (int)$r['id'] ?>">
+        <textarea name="comment" class="input-field" placeholder="Comment (optional)"></textarea>
+        <div class="action-buttons" style="margin-top:8px;">
+          <button class="action-btn edit-btn"   name="action" value="approve"    type="submit">Approve</button>
+          <button class="action-btn delete-btn" name="action" value="disapprove" type="submit">Disapprove</button>
+        </div>
+      </form>
+    </td>
+  </tr>
+<?php endwhile; ?>
+
       <?php endif; ?>
       </tbody>
     </table>
@@ -262,5 +282,60 @@ $pending = $conn->query("
     </div>
     <p class="footer-copy">&copy; 2025 Edulearn. All rights reserved.</p>
   </footer>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script>
+$(function() {
+
+  // نخزّن آخر زر تم الضغط عليه في هذا المتغيّر
+  let lastAction = '';
+
+  // لما نضغط على Approve أو Disapprove نحفظ الـ value
+  $(document).on('click', '.reviewForm button[name="action"]', function() {
+    lastAction = $(this).val(); // "approve" أو "disapprove"
+  });
+
+  // لما الفورم تنرسل (submit)
+  $('.reviewForm').on('submit', function(e) {
+    e.preventDefault(); // ما نخلّي الصفحة تعيد التحميل
+
+    const $form = $(this);
+    const url   = $form.attr('action');
+    const row   = $form.closest('tr');
+
+    // لو ما فيه زر ضغطناه لأي سبب، لا نكمل
+    if (!lastAction) {
+      alert('Please click Approve or Disapprove again.');
+      return;
+    }
+
+    // نستخدم serialize ونضيف لها الـ action يدوي
+    let data = $form.serialize();
+    data += '&action=' + encodeURIComponent(lastAction);
+
+    $.ajax({
+      url: url,
+      type: 'POST',
+      data: data,
+      dataType: 'json',
+      success: function(resp) {
+        if (resp && resp.success) {
+          // نحذف الصف من الجدول
+          row.fadeOut(300, function(){ $(this).remove(); });
+        } else {
+          alert(resp.message || 'Something went wrong while processing the request.');
+        }
+      },
+      error: function(xhr, status, error) {
+        console.error(error);
+        alert('AJAX error: ' + error);
+      }
+    });
+  });
+
+});
+</script>
+
+
 </body>
 </html>
