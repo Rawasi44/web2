@@ -1,4 +1,8 @@
 <?php
+
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
 include 'db_connection.php'; // الاتصال بقاعدة البيانات
 session_start(); // لتمكين الجلسات
 
@@ -9,7 +13,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $password = trim($_POST['password']);
 
     // استعلام للبحث عن المستخدم في قاعدة البيانات
-    $sql = "SELECT * FROM User WHERE emailAddress = ?";
+    $sql = "SELECT * FROM user WHERE emailAddress = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("s", $email);
     $stmt->execute();

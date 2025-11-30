@@ -7,6 +7,7 @@ if (!isset($_SESSION['userID']) || ($_SESSION['userType'] ?? '') !== 'learner') 
 require 'db_connection.php';
 
 $learnerID = (int)$_SESSION['userID'];
+
 // -------- بيانات المتعلّم لجزء "Your Info" --------
 $first = $_SESSION['firstName']    ?? '';
 $last  = $_SESSION['lastName']     ?? '';
@@ -34,7 +35,7 @@ if ($first === '' || $last === '' || $email === '' || $photo === '') {
     }
 }
 
-// جهّزي مسار الصورة (uploads/images) وافتراضي عند عدم وجود الملف
+// جهّزي مسار صورة البروفايل (uploads/images) وافتراضي عند عدم وجود الملف
 function safe_photo_local($p) {
     if (!$p) return "images/default.png";
 
@@ -58,6 +59,42 @@ function safe_photo_local($p) {
     return "images/default.png";
 }
 $photo = safe_photo_local($photo);
+
+// مسار صورة المعلّم (educator) في الجداول
+function safe_photo($path) {
+  $p = $path ?: 'images/default.png';
+  if (!preg_match('#^(uploads/|images/|/|https?://)#i', $p)) $p = 'uploads/'.$p;
+  if (!is_file($p)) $p = 'images/default.png';
+  return $p;
+}
+
+// مسار صورة السؤال (question figure)
+function safe_question_image($p) {
+    if (!$p) return ''; // ما فيه صورة
+
+    // لو المسار أصلاً يبدأ بـ uploads أو images
+    if (preg_match('#^(uploads/|images/)#i', $p)) {
+        return $p;
+    }
+
+    // لو الملف موجود داخل uploads/
+    if (is_file("uploads/".$p)) {
+        return "uploads/".$p;
+    }
+
+    // لو الملف موجود داخل images/
+    if (is_file("images/".$p)) {
+        return "images/".$p;
+    }
+
+    // لو موجود بنفس المجلد
+    if (is_file($p)) {
+        return $p;
+    }
+
+    // ما لقينا شيء → رجّعي فاضي (ما نعرض صورة)
+    return '';
+}
 
 // ترميز آمن للعرض
 $first = htmlspecialchars($first, ENT_QUOTES, 'UTF-8');
@@ -107,14 +144,6 @@ $reco = $conn->query("
   WHERE rq.learnerID = $learnerID
   ORDER BY rq.createdAt DESC
 ");
-
-// دالة تحضير مسار صورة (uploads / images / default)
-function safe_photo($path) {
-  $p = $path ?: 'images/default.png';
-  if (!preg_match('#^(uploads/|images/|/|https?://)#i', $p)) $p = 'uploads/'.$p;
-  if (!is_file($p)) $p = 'images/default.png';
-  return $p;
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -161,82 +190,82 @@ function safe_photo($path) {
     <a href="logout.php">Sign out</a>
   </div>
 
-    <!-- معلومات المعلّم -->
- <div class="form-container" style="max-width: 800px;">
-  <h3>Your Info</h3>
-  <table>
-    <tbody>
-      <tr>
-        <th style="width:180px;">Profile</th>
-        <td style="text-align:left;">
-          <img src="<?= $photo ?>" alt="Profile" class="avatar"
-               style="display:block; margin-left:0; width:160px; height:160px; border-radius:50%; object-fit:cover;">
-        </td>
-      </tr>
-      <tr><th>First name</th><td><?= $first ?></td></tr>
-      <tr><th>Last name</th><td><?= $last ?></td></tr>
-      <tr><th>Email</th><td><?= $email ?></td></tr>
-    </tbody>
-  </table>
-</div>
+  <!-- معلومات المتعلّم -->
+  <div class="form-container" style="max-width: 800px;">
+    <h3>Your Info</h3>
+    <table>
+      <tbody>
+        <tr>
+          <th style="width:180px;">Profile</th>
+          <td style="text-align:left;">
+            <img src="<?= $photo ?>" alt="Profile" class="avatar"
+                 style="display:block; margin-left:0; width:160px; height:160px; border-radius:50%; object-fit:cover;">
+          </td>
+        </tr>
+        <tr><th>First name</th><td><?= $first ?></td></tr>
+        <tr><th>Last name</th><td><?= $last ?></td></tr>
+        <tr><th>Email</th><td><?= $email ?></td></tr>
+      </tbody>
+    </table>
+  </div>
 
   <!-- الكويزات المتاحة -->
   <div class="quiz-container">
-  <h2>Your Quizzes</h2>
+    <h2>Your Quizzes</h2>
 
- <div class="filter-bar">
-    <label for="topicID" class="muted">Filter by topic:</label>
-    <select id="topicID" class="input-field" style="max-width:260px;">
-        <option value="0">All topics</option>
-        <?php
-        $topicsRes2 = $conn->query("SELECT id, topicName FROM topic ORDER BY topicName");
-        while($t = $topicsRes2->fetch_assoc()):
-        ?>
-            <option value="<?= (int)$t['id'] ?>">
-                <?= htmlspecialchars($t['topicName']) ?>
-            </option>
-        <?php endwhile; ?>
-    </select>
-</div>
-
-  <table class="styled" id="quizzesTable">
-    <thead>
-      <tr>
-        <th class="col-topic">Topic</th>
-        <th>Educator</th>
-        <th class="col-count"># Questions</th>
-        <th class="col-feedback">Take</th>
-      </tr>
-    </thead>
-    <tbody>
-      <?php if (!$quizzes || $quizzes->num_rows===0): ?>
-        <tr><td colspan="4" style="text-align:center;opacity:.8;">No quizzes found.</td></tr>
-      <?php else: ?>
-        <?php while($q = $quizzes->fetch_assoc()): ?>
+    <div class="filter-bar">
+      <label for="topicID" class="muted">Filter by topic:</label>
+      <select id="topicID" class="input-field" style="max-width:260px;">
+          <option value="0">All topics</option>
           <?php
-            $eduPhoto = safe_photo($q['educatorPhoto']);
-            $qCount   = (int)$q['qCount'];
+          $topicsRes2 = $conn->query("SELECT id, topicName FROM topic ORDER BY topicName");
+          while($t = $topicsRes2->fetch_assoc()):
           ?>
-          <tr>
-            <td><?= htmlspecialchars($q['topic']) ?></td>
-            <td>
-              <div class="edu-wrap">
-                <img src="<?= htmlspecialchars($eduPhoto) ?>" class="edu-avatar" alt="Educator">
-                <span><?= htmlspecialchars($q['firstName'].' '.$q['lastName']) ?></span>
-              </div>
-            </td>
-            <td style="text-align:center;"><?= $qCount ?></td>
-            <td>
-              <?php if ($qCount > 0): ?>
-                <a class="btn-success" href="take_quiz.php?quizID=<?= (int)$q['quizID'] ?>">Take Quiz</a>
-              <?php endif; ?>
-            </td>
-          </tr>
-        <?php endwhile; ?>
-      <?php endif; ?>
-    </tbody>
-  </table>
-</div>
+              <option value="<?= (int)$t['id'] ?>">
+                  <?= htmlspecialchars($t['topicName']) ?>
+              </option>
+          <?php endwhile; ?>
+      </select>
+    </div>
+
+    <table class="styled" id="quizzesTable">
+      <thead>
+        <tr>
+          <th class="col-topic">Topic</th>
+          <th>Educator</th>
+          <th class="col-count"># Questions</th>
+          <th class="col-feedback">Take</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php if (!$quizzes || $quizzes->num_rows===0): ?>
+          <tr><td colspan="4" style="text-align:center;opacity:.8;">No quizzes found.</td></tr>
+        <?php else: ?>
+          <?php while($q = $quizzes->fetch_assoc()): ?>
+            <?php
+              $eduPhoto = safe_photo($q['educatorPhoto']);
+              $qCount   = (int)$q['qCount'];
+            ?>
+            <tr>
+              <td><?= htmlspecialchars($q['topic']) ?></td>
+              <td>
+                <div class="edu-wrap">
+                  <img src="<?= htmlspecialchars($eduPhoto) ?>" class="edu-avatar" alt="Educator">
+                  <span><?= htmlspecialchars($q['firstName'].' '.$q['lastName']) ?></span>
+                </div>
+              </td>
+              <td style="text-align:center;"><?= $qCount ?></td>
+              <td>
+                <?php if ($qCount > 0): ?>
+                  <a class="btn-success" href="take_quiz.php?quizID=<?= (int)$q['quizID'] ?>">Take Quiz</a>
+                <?php endif; ?>
+              </td>
+            </tr>
+          <?php endwhile; ?>
+        <?php endif; ?>
+      </tbody>
+    </table>
+  </div>
 
   <!-- الأسئلة المقترحة من المتعلّم -->
   <div class="quiz-container">
@@ -256,7 +285,10 @@ function safe_photo($path) {
           <tr><td colspan="5" style="text-align:center;opacity:.8;">No recommendations.</td></tr>
         <?php else: ?>
           <?php while($r = $reco->fetch_assoc()): ?>
-            <?php $eduP = safe_photo($r['educatorPhoto']); ?>
+            <?php 
+              $eduP = safe_photo($r['educatorPhoto']); 
+              $fig  = safe_question_image($r['questionFigureFileName']);
+            ?>
             <tr>
               <td><?= htmlspecialchars($r['topicName']) ?></td>
               <td>
@@ -267,11 +299,10 @@ function safe_photo($path) {
               </td>
               <td>
                 <div class="qbox">
-                  <?php if (!empty($r['questionFigureFileName'])): ?>
-                    <img class="qthumb" src="<?= htmlspecialchars($r['questionFigureFileName']) ?>" alt="Figure">
+                  <?php if ($fig): ?>
+                    <img class="qthumb" src="<?= htmlspecialchars($fig) ?>" alt="Figure">
                   <?php endif; ?>
                   <div>
-                      
                     <?= nl2br(htmlspecialchars($r['question'])) ?>
                     <ul class="options" style="margin-top:6px;">
                       <li>A) <?= htmlspecialchars($r['answerA']) ?></li>
@@ -304,64 +335,62 @@ function safe_photo($path) {
   </footer>
   
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+  $(document).ready(function(){
 
-<script>
-$(document).ready(function(){
+      $("#topicID").on("change", function(){
+          let topicID = $(this).val();
 
-    $("#topicID").on("change", function(){
-        let topicID = $(this).val();
+          $.ajax({
+              url: "ajax_get_quizzes.php", // ملف PHP مستقل
+              type: "POST",
+              data: { topicID: topicID },
+              dataType: "json",
 
-        $.ajax({
-            url: "ajax_get_quizzes.php", // ملف PHP مستقل
-            type: "POST",
-            data: { topicID: topicID },
-            dataType: "json",
+              success: function(response){
 
-            success: function(response){
+                  $("#quizzesTable tbody").empty();
 
-                $("#quizzesTable tbody").empty();
+                  if(response.length === 0){
+                      $("#quizzesTable tbody").append(`
+                          <tr>
+                              <td colspan="4" style="text-align:center;opacity:.8;">
+                                  No quizzes found.
+                              </td>
+                          </tr>
+                      `);
+                      return;
+                  }
 
-                if(response.length === 0){
-                    $("#quizzesTable tbody").append(`
-                        <tr>
-                            <td colspan="4" style="text-align:center;opacity:.8;">
-                                No quizzes found.
-                            </td>
-                        </tr>
-                    `);
-                    return;
-                }
+                  response.forEach(q => {
+                      $("#quizzesTable tbody").append(`
+                          <tr>
+                              <td>${q.topic}</td>
+                              <td>
+                                  <div class="edu-wrap">
+                                      <img src="${q.educatorPhoto}" class="edu-avatar">
+                                      <span>${q.firstName} ${q.lastName}</span>
+                                  </div>
+                              </td>
+                              <td style="text-align:center;">${q.qCount}</td>
+                              <td>
+                                  ${q.qCount > 0 ? 
+                                      `<a class="btn-success" href="take_quiz.php?quizID=${q.quizID}">Take Quiz</a>` 
+                                      : ""
+                                  }
+                              </td>
+                          </tr>
+                      `);
+                  });
+              },
 
-                response.forEach(q => {
-                    $("#quizzesTable tbody").append(`
-                        <tr>
-                            <td>${q.topic}</td>
-                            <td>
-                                <div class="edu-wrap">
-                                    <img src="${q.educatorPhoto}" class="edu-avatar">
-                                    <span>${q.firstName} ${q.lastName}</span>
-                                </div>
-                            </td>
-                            <td style="text-align:center;">${q.qCount}</td>
-                            <td>
-                                ${q.qCount > 0 ? 
-                                    `<a class="btn-success" href="take_quiz.php?quizID=${q.quizID}">Take Quiz</a>` 
-                                    : ""
-                                }
-                            </td>
-                        </tr>
-                    `);
-                });
-            },
+              error: function(xhr, status, error){
+                  console.log("ERROR:", error);
+              }
+          });
+      });
 
-            error: function(xhr, status, error){
-                console.log("ERROR:", error);
-            }
-        });
-    });
-
-});
-</script>
+  });
+  </script>
 </body>
 </html>
-

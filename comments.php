@@ -12,20 +12,20 @@ if ($quizID <= 0) {
 
 $quizInfo = $conn->query("
   SELECT Q.id, T.topicName, CONCAT(U.firstName,' ',U.lastName) AS educatorName
-  FROM Quiz Q
-  JOIN Topic T ON T.id=Q.topicID
-  JOIN User  U ON U.id=Q.educatorID
+  FROM quiz Q
+  JOIN topic T ON T.id=Q.topicID
+  JOIN user  U ON U.id=Q.educatorID
   WHERE Q.id=$quizID
 ")->fetch_assoc();
 
 
-$stmt = $conn->prepare("SELECT rating, comments, date FROM QuizFeedback WHERE quizID=? ORDER BY date DESC");
+$stmt = $conn->prepare("SELECT rating, comments, date FROM quizfeedback WHERE quizID=? ORDER BY date DESC");
 $stmt->bind_param("i", $quizID);
 $stmt->execute();
 $feedbacks = $stmt->get_result();
 
 
-$avgRow = $conn->query("SELECT ROUND(AVG(rating),2) AS avgRating, COUNT(*) AS cnt FROM QuizFeedback WHERE quizID=$quizID")->fetch_assoc();
+$avgRow = $conn->query("SELECT ROUND(AVG(rating),2) AS avgRating, COUNT(*) AS cnt FROM quizfeedback WHERE quizID=$quizID")->fetch_assoc();
 
 function stars($n) {
   $n = max(0, min(5, (int)$n));

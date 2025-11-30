@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $error = "Please fill all required fields.";
   } else {
       // البحث عن كويز موجود لهذا المعلم والموضوع لربط السؤال به
-      $quiz = $conn->prepare("SELECT id FROM Quiz WHERE educatorID=? AND topicID=?");
+      $quiz = $conn->prepare("SELECT id FROM quiz WHERE educatorID=? AND topicID=?");
       $quiz->bind_param("ii", $educatorID, $topicID);
       $quiz->execute();
       $quizRes = $quiz->get_result()->fetch_assoc();
@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // إدخال السؤال المقترح
         $stmt = $conn->prepare("
-            INSERT INTO RecommendedQuestion
+            INSERT INTO recommendedquestion
             (quizID, learnerID, question, questionFigureFileName, answerA, answerB, answerC, answerD, correctAnswer, status)
             VALUES (?,?,?,?,?,?,?,?,?, 'pending')
         ");
@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // جلب قائمة المواضيع فقط (المعلمين سيتم جلبهم بـ AJAX)
-$topicsRes = $conn->query("SELECT id, topicName FROM Topic ORDER BY topicName");
+$topicsRes = $conn->query("SELECT id, topicName FROM topic ORDER BY topicName");
 ?>
 <!DOCTYPE html>
 <html lang="en">

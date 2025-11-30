@@ -1,21 +1,14 @@
 <?php
+$servername = "sql312.infinityfree.com"; 
+$username   = "if0_40559314"; 
+$password   = "9Qj4EqrVRA8D69"; 
+$dbname     = "if0_40559314_edulearnweb_db";
 
-// إعدادات الاتصال بقاعدة البيانات
-$servername = "localhost";
-$username = "root";
-$password = "root"; // خليه فاضي لو تستخدمين MAMP أو XAMPP محليًا
-$dbname = "edulearndb"; // اكتبي هنا اسم قاعدتك بالضبط مثل ما سويتيها في phpMyAdmin
+$conn = mysqli_connect($servername, $username, $password, $dbname);
 
-// إنشاء الاتصال
-$conn = new mysqli($servername,$username,$password, $dbname,8889);
-
-// فحص الاتصال
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+if (!$conn) {
+    die("Connection failed: " . mysqli_connect_error());
 }
 
-// لو وصل لهنا، الاتصال ناجح
-// تقدرين تختبرينه مؤقتًا بإظهار رسالة:
- //echo "Connected successfully";
-
+mysqli_set_charset($conn, "utf8mb4");
 ?>
