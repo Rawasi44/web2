@@ -9,10 +9,10 @@ if (!isset($_SESSION['userID']) || ($_SESSION['userType'] ?? '') !== 'learner') 
 
 require 'db_connection.php';
 
-// خذي التوبيك المختار من AJAX
+
 $topicID = (int)($_POST['topicID'] ?? 0);
 
-// نفس الاستعلام الموجود عندك فوق → لكن بدون HTML
+ 
 $sql = "
   SELECT
     q.id            AS quizID,
